@@ -4,7 +4,6 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.client.ClientRecipeBook;
-import net.minecraft.client.gui.screens.inventory.AbstractRecipeBookScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 import net.minecraft.client.gui.screens.recipebook.RecipeCollection;
@@ -124,14 +123,14 @@ public final class EscapeAltDeleteTest implements FabricClientGameTest {
     private static void click(ClientGameTestContext context, Item result, boolean maximum) {
         try {
             context.runOnClient(client -> {
-            var entry = find(client.player.getRecipeBook(), result);
-            var field = AbstractRecipeBookScreen.class.getDeclaredField("recipeBookComponent");
-            field.setAccessible(true);
-            var component = field.get(client.gui.screen());
-            var method = RecipeBookComponent.class.getDeclaredMethod("tryPlaceRecipe", RecipeCollection.class,
-                    RecipeDisplayId.class, boolean.class);
-            method.setAccessible(true);
-            check((boolean) method.invoke(component, new RecipeCollection(List.of(entry)), entry.id(), maximum), "Native click hook");
+                var entry = find(client.player.getRecipeBook(), result);
+                var component = client.gui.screen().children().stream()
+                        .filter(RecipeBookComponent.class::isInstance).findFirst().orElseThrow();
+                var method = RecipeBookComponent.class.getDeclaredMethod("tryPlaceRecipe", RecipeCollection.class,
+                        RecipeDisplayId.class, boolean.class);
+                method.setAccessible(true);
+                check((boolean) method.invoke(component, new RecipeCollection(List.of(entry)), entry.id(), maximum),
+                        "Native click hook");
             });
         } catch (ReflectiveOperationException error) {
             throw new AssertionError(error);

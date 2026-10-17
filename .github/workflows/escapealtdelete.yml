@@ -8,17 +8,14 @@ on:
     paths-ignore: ['**/*.md']
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 concurrency:
   group: EscapeAltDelete-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   escapealtdelete:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: read
       packages: write
@@ -31,12 +28,25 @@ jobs:
           distribution: temurin
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build
-        run: ./gradlew build --build-cache
-      - name: Test in Minecraft
-        run: xvfb-run -a ./gradlew -Pgametest runClientGameTest --build-cache
+        with:
+          gradle-home-cache-excludes: caches/fabric-loom
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches/fabric-loom
+            .gradle/loom-cache
+          key: loom-${{ runner.os }}-${{ hashFiles('build.gradle', 'settings.gradle', 'gradle.properties', 'gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Software graphics
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libgl1-mesa-dri libglx-mesa0 mesa-utils
+      - name: Build and test
+        timeout-minutes: 5
+        run: xvfb-run -a -s '-screen 0 1280x720x24' sh -c 'glxinfo -B && ./gradlew -Pgametest build runClientGameTest'
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
+          GALLIUM_DRIVER: llvmpipe
+          SDL_VIDEODRIVER: x11
       - uses: actions/upload-artifact@v4
         with:
           name: EscapeAltDelete
@@ -53,6 +63,6 @@ jobs:
             build/run/clientGameTest/screenshots/
       - name: Publish GitHub package
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        run: ./gradlew publish --build-cache
+        run: ./gradlew publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

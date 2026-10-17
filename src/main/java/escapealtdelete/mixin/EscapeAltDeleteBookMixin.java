@@ -52,12 +52,8 @@ abstract class EscapeAltDeleteBookMixin {
                 try (var reader = new InputStreamReader(file.getValue().get(), StandardCharsets.UTF_8)) {
                     var json = JsonParser.parseReader(reader).getAsJsonObject();
                     var type = json.get("type").getAsString();
-                    if (!type.startsWith("minecraft:crafting_")) {
-                        switch (type) {
-                            case "minecraft:smelting", "minecraft:blasting", "minecraft:smoking" -> { }
-                            default -> { continue; }
-                        }
-                    }
+                    if (!type.startsWith("minecraft:crafting_") && !type.equals("minecraft:smelting")
+                            && !type.equals("minecraft:blasting") && !type.equals("minecraft:smoking")) continue;
                     var recipe = Recipe.DIRECT_CODEC.parse(ops, json).getOrThrow();
                     if (recipe.isSpecial()) continue;
                     var group = recipe.group().isEmpty() ? OptionalInt.empty()
@@ -78,7 +74,7 @@ abstract class EscapeAltDeleteBookMixin {
                 }
             }
         }
-        // Local IDs are previews, never valid server crafting requests.
+        // Local display IDs must never be sent as server recipe IDs.
         known.clear();
         for (var entry : escapealtdelete$local) known.put(entry.id(), entry);
     }

@@ -1,6 +1,6 @@
-package escapealtdelete.mixin;
+package recipe_revealer.mixin;
 
-import escapealtdelete.EscapeAltDeleteFill;
+import recipe_revealer.RecipeFill;
 import net.minecraft.client.gui.screens.recipebook.GhostSlots;
 import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 import net.minecraft.client.gui.screens.recipebook.RecipeCollection;
@@ -14,18 +14,18 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(RecipeBookComponent.class)
-abstract class EscapeAltDeleteScreenMixin {
+abstract class RecipeBookScreenMixin {
     @Shadow @Final private GhostSlots ghostSlots;
     @Shadow public abstract void fillGhostRecipe(RecipeDisplay display);
 
     @Inject(method = "tryPlaceRecipe", at = @At("HEAD"), cancellable = true)
-    private void escapealtdelete$place(RecipeCollection collection, RecipeDisplayId id, boolean maxItems,
+    private void recipe_revealer$place(RecipeCollection collection, RecipeDisplayId id, boolean maxItems,
                                         CallbackInfoReturnable<Boolean> cir) {
         if (id.index() >= 0) return;
         ghostSlots.clear();
         collection.getRecipes().stream().filter(entry -> entry.id().equals(id)).findFirst()
                 .ifPresent(entry -> {
-                    if (!EscapeAltDeleteFill.place(entry, maxItems)) fillGhostRecipe(entry.display());
+                    if (!RecipeFill.place(entry, maxItems)) fillGhostRecipe(entry.display());
                 });
         cir.setReturnValue(true);
     }

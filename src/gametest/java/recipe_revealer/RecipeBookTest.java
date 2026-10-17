@@ -1,4 +1,4 @@
-package escapealtdelete;
+package recipe_revealer;
 
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
@@ -26,7 +26,7 @@ import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 import java.util.List;
 import java.util.Set;
 
-public final class EscapeAltDeleteTest implements FabricClientGameTest {
+public final class RecipeBookTest implements FabricClientGameTest {
     @Override
     public void runTest(ClientGameTestContext context) {
         for (int connection = 0; connection < 2; connection++) {
@@ -86,9 +86,9 @@ public final class EscapeAltDeleteTest implements FabricClientGameTest {
                 context.runOnClient(client -> {
                     var book = client.player.getRecipeBook();
                     var missing = find(book, Items.DIAMOND_BLOCK);
-                    check(!EscapeAltDeleteFill.place(missing, false), "Missing ingredients must not fabricate items");
+                    check(!RecipeFill.place(missing, false), "Missing ingredients must not fabricate items");
                     client.player.containerMenu.setCarried(new ItemStack(Items.DIAMOND));
-                    check(!EscapeAltDeleteFill.place(find(book, Items.OAK_PLANKS), false), "Do not touch a nonempty cursor");
+                    check(!RecipeFill.place(find(book, Items.OAK_PLANKS), false), "Do not touch a nonempty cursor");
                     client.player.containerMenu.setCarried(ItemStack.EMPTY);
                 });
                 world.getServer().runOnServer(server -> {
@@ -107,7 +107,7 @@ public final class EscapeAltDeleteTest implements FabricClientGameTest {
                     var player = world.getConnection().getServerPlayer();
                     player.getInventory().setItem(0, new ItemStack(Items.RAW_IRON, 7));
                     player.openMenu(new SimpleMenuProvider((id, inventory, owner) -> new FurnaceMenu(id, inventory),
-                            Component.literal("EscapeAltDelete")));
+                            Component.literal("Recipe Revealer")));
                 });
                 sync(world);
                 click(context, Items.IRON_INGOT, true);

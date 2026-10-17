@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "escapealtdelete",
+  "id": "recipe_revealer",
   "version": "${version}",
-  "name": "EscapeAltDelete",
+  "name": "Recipe Revealer",
   "description": "Reveals vanilla recipes in the native recipe book and fills ingredients through normal inventory clicks.",
   "authors": [
     "EscapeAltDelete"
@@ -10,7 +10,7 @@
   "license": "PolyForm-Noncommercial-1.0.0",
   "environment": "client",
   "mixins": [
-    "escapealtdelete.mixins.json"
+    "recipe_revealer.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.19.5",

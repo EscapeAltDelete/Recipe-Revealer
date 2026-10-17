@@ -1,12 +1,11 @@
 {
   "schemaVersion": 1,
-  "id": "escapealtdelete_test",
+  "id": "recipe_revealer_test",
   "version": "1.0.0",
-  "name": "EscapeAltDelete",
-  "authors": ["EscapeAltDelete"],
-  "license": "PolyForm-Noncommercial-1.0.0",
   "environment": "client",
   "entrypoints": {
-    "fabric-client-gametest": ["escapealtdelete.EscapeAltDeleteTest"]
+    "fabric-client-gametest": [
+      "recipe_revealer.RecipeBookTest"
+    ]
   }
 }

@@ -1,4 +1,4 @@
-package escapealtdelete;
+package recipe_revealer;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
@@ -19,7 +19,7 @@ import net.minecraft.world.item.crafting.display.SlotDisplay;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class EscapeAltDeleteFill {
+public final class RecipeFill {
     public static boolean place(RecipeDisplayEntry entry, boolean maximum) {
         var client = Minecraft.getInstance();
         var menu = client.player.containerMenu;
@@ -92,6 +92,6 @@ public final class EscapeAltDeleteFill {
 
     private static void click(Minecraft client, Slot slot, int button, ContainerInput action) {
         var menu = client.player.containerMenu;
-        client.gameMode.handleContainerInput(menu.containerId, menu.slots.indexOf(slot), button, action, client.player);
+        client.gameMode.handleContainerInput(menu.containerId, slot.index, button, action, client.player);
     }
 }

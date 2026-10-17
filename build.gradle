@@ -3,13 +3,8 @@ plugins {
     id 'maven-publish'
 }
 
-group = 'escapealtdelete'
-version = providers.environmentVariable('ESCAPEALTDELETE_VERSION').getOrElse('1.0.0')
-
-dependencies {
-    minecraft 'com.mojang:minecraft:26.3'
-    implementation 'net.fabricmc:fabric-loader:0.19.5'
-}
+group = 'recipe_revealer'
+version = providers.environmentVariable('MOD_VERSION').getOrElse('1.0.0')
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(25)
@@ -25,23 +20,27 @@ jar {
     from 'LICENSE', 'NOTICE'
 }
 
-// Test dependencies and code never enter the distributed mod.
-if (providers.gradleProperty('gametest').isPresent()) {
-    fabricApi.configureTests {
-        createSourceSet = true
-        modId = 'escapealtdelete_test'
-        enableGameTests = false
-    }
-    dependencies {
-        gametestImplementation 'net.fabricmc.fabric-api:fabric-api:0.163.0+26.3'
-    }
+// This source set and its dependencies are never shipped.
+fabricApi.configureTests {
+    createSourceSet = true
+    enableGameTests = false
+}
+
+tasks.named('runClientGameTest') {
+    useXvfb = false
+}
+
+dependencies {
+    minecraft 'com.mojang:minecraft:26.3'
+    implementation 'net.fabricmc:fabric-loader:0.19.5'
+    gametestImplementation 'net.fabricmc.fabric-api:fabric-api:0.163.0+26.3'
 }
 
 publishing {
     publications {
-        escapealtdelete(MavenPublication) {
+        mod(MavenPublication) {
             from components.java
-            artifactId = 'escapealtdelete'
+            artifactId = 'recipe-revealer'
         }
     }
     repositories {

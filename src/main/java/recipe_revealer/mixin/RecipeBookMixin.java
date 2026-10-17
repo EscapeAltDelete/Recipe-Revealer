@@ -1,4 +1,4 @@
-package escapealtdelete.mixin;
+package recipe_revealer.mixin;
 
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
@@ -32,16 +32,16 @@ import java.util.OptionalInt;
 import java.util.TreeMap;
 
 @Mixin(ClientRecipeBook.class)
-abstract class EscapeAltDeleteBookMixin {
+abstract class RecipeBookMixin {
     @Shadow @Final private Map<RecipeDisplayId, RecipeDisplayEntry> known;
-    @Unique private List<RecipeDisplayEntry> escapealtdelete$local;
+    @Unique private List<RecipeDisplayEntry> recipe_revealer$local;
 
     @Inject(method = "rebuildCollections", at = @At("HEAD"))
-    private void escapealtdelete$reveal(CallbackInfo ci) {
+    private void recipe_revealer$reveal(CallbackInfo ci) {
         var client = Minecraft.getInstance();
         if (client.level == null) return;
-        if (escapealtdelete$local == null) {
-            escapealtdelete$local = new ArrayList<>();
+        if (recipe_revealer$local == null) {
+            recipe_revealer$local = new ArrayList<>();
             var ops = client.level.registryAccess().createSerializationContext(JsonOps.INSTANCE);
             var files = new TreeMap<Identifier, IoSupplier<InputStream>>();
             client.getVanillaPackResources().fullResources()
@@ -60,22 +60,22 @@ abstract class EscapeAltDeleteBookMixin {
                             : OptionalInt.of(groups.computeIfAbsent(recipe.group(), key -> -1 - groups.size()));
                     for (var display : recipe.display()) {
                         if (!display.isEnabled(client.level.enabledFeatures())) continue;
-                        var id = new RecipeDisplayId(-1 - escapealtdelete$local.size());
+                        var id = new RecipeDisplayId(-1 - recipe_revealer$local.size());
                         var ingredients = recipe.placementInfo().ingredients();
                         if (display instanceof ShapelessCraftingRecipeDisplay shapeless
                                 && shapeless.ingredients().size() < ingredients.size()) {
                             ingredients = ingredients.subList(0, shapeless.ingredients().size());
                         }
-                        escapealtdelete$local.add(new RecipeDisplayEntry(id, display, group, recipe.recipeBookCategory(),
+                        recipe_revealer$local.add(new RecipeDisplayEntry(id, display, group, recipe.recipeBookCategory(),
                                 Optional.of(ingredients)));
                     }
                 } catch (Exception error) {
-                    LoggerFactory.getLogger("EscapeAltDelete").warn("Cannot display {}", file.getKey(), error);
+                    LoggerFactory.getLogger("Recipe Revealer").warn("Cannot display {}", file.getKey(), error);
                 }
             }
         }
         // Local display IDs must never be sent as server recipe IDs.
         known.clear();
-        for (var entry : escapealtdelete$local) known.put(entry.id(), entry);
+        for (var entry : recipe_revealer$local) known.put(entry.id(), entry);
     }
 }

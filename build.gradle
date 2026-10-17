@@ -1,0 +1,61 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.18.1'
+    id 'maven-publish'
+}
+
+group = 'escapealtdelete'
+version = providers.environmentVariable('ESCAPEALTDELETE_VERSION').getOrElse('1.0.0')
+
+dependencies {
+    minecraft 'com.mojang:minecraft:26.3'
+    implementation 'net.fabricmc:fabric-loader:0.19.5'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand version: inputs.properties.version }
+}
+
+jar {
+    from 'LICENSE', 'NOTICE'
+}
+
+// Test dependencies and code never enter the distributed mod.
+if (providers.gradleProperty('gametest').isPresent()) {
+    fabricApi.configureTests {
+        createSourceSet = true
+        modId = 'escapealtdelete_test'
+        enableGameTests = false
+    }
+    dependencies {
+        gametestImplementation 'net.fabricmc.fabric-api:fabric-api:0.163.0+26.3'
+    }
+}
+
+publishing {
+    publications {
+        escapealtdelete(MavenPublication) {
+            from components.java
+            artifactId = 'escapealtdelete'
+        }
+    }
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = 'https://maven.pkg.github.com/EscapeAltDelete/Recipe-Revealer'
+            credentials {
+                username = providers.environmentVariable('GITHUB_ACTOR').orNull
+                password = providers.environmentVariable('GITHUB_TOKEN').orNull
+            }
+        }
+    }
+}

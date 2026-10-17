@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "escapealtdelete",
+  "version": "${version}",
+  "name": "EscapeAltDelete",
+  "description": "Reveals vanilla recipes in the native recipe book and fills ingredients through normal inventory clicks.",
+  "authors": [
+    "EscapeAltDelete"
+  ],
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "environment": "client",
+  "mixins": [
+    "escapealtdelete.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "26.3",
+    "java": ">=25"
+  }
+}

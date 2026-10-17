@@ -1,12 +1,18 @@
 package recipe_revealer.mixin;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.client.ClientRecipeBook;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
-import net.minecraft.server.packs.resources.IoSupplier;
+import net.minecraft.server.packs.resources.FallbackResourceManager;
+import net.minecraft.tags.TagLoader;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.display.RecipeDisplayEntry;
 import net.minecraft.world.item.crafting.display.RecipeDisplayId;
@@ -20,16 +26,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.TreeMap;
 
 @Mixin(ClientRecipeBook.class)
 abstract class RecipeBookMixin {
@@ -43,18 +45,19 @@ abstract class RecipeBookMixin {
         if (recipe_revealer$local == null) {
             recipe_revealer$local = new ArrayList<>();
             var ops = client.level.registryAccess().createSerializationContext(JsonOps.INSTANCE);
-            var files = new TreeMap<Identifier, IoSupplier<InputStream>>();
-            client.getVanillaPackResources().fullResources()
-                    .listResources(PackType.SERVER_DATA, "minecraft", "recipe", files::put);
+            var resources = new FallbackResourceManager(PackType.SERVER_DATA, "minecraft");
+            resources.push(client.getVanillaPackResources().fullResources());
+            var items = client.level.registryAccess().lookupOrThrow(Registries.ITEM);
+            var loader = new TagLoader<Holder<Item>>((id, required) -> items.get(id), Registries.tagsDirPath(Registries.ITEM));
+            var tags = loader.build(loader.load(resources));
             var groups = new HashMap<String, Integer>();
-            for (var file : files.entrySet()) {
-                if (!file.getKey().getPath().endsWith(".json")) continue;
-                try (var reader = new InputStreamReader(file.getValue().get(), StandardCharsets.UTF_8)) {
+            for (var file : resources.listResources("recipe", id -> id.getPath().endsWith(".json")).entrySet()) {
+                try (var reader = file.getValue().openAsReader()) {
                     var json = JsonParser.parseReader(reader).getAsJsonObject();
                     var type = json.get("type").getAsString();
                     if (!type.startsWith("minecraft:crafting_") && !type.equals("minecraft:smelting")
                             && !type.equals("minecraft:blasting") && !type.equals("minecraft:smoking")) continue;
-                    var recipe = Recipe.DIRECT_CODEC.parse(ops, json).getOrThrow();
+                    var recipe = Recipe.DIRECT_CODEC.parse(ops, recipe_revealer$resolveTags(json, tags)).getOrThrow();
                     if (recipe.isSpecial()) continue;
                     var group = recipe.group().isEmpty() ? OptionalInt.empty()
                             : OptionalInt.of(groups.computeIfAbsent(recipe.group(), key -> -1 - groups.size()));
@@ -70,12 +73,28 @@ abstract class RecipeBookMixin {
                                 Optional.of(ingredients)));
                     }
                 } catch (Exception error) {
-                    LoggerFactory.getLogger("Recipe Revealer").warn("Cannot display {}", file.getKey(), error);
+                    LoggerFactory.getLogger("Recipe Revealer").warn("Cannot display {}: {}", file.getKey(), error.toString());
                 }
             }
         }
         // Local display IDs must never be sent as server recipe IDs.
         known.clear();
         for (var entry : recipe_revealer$local) known.put(entry.id(), entry);
+    }
+
+    // Resolve stock ingredients without changing the server's registry tags.
+    @Unique
+    private static JsonElement recipe_revealer$resolveTags(JsonElement json, Map<Identifier, List<Holder<Item>>> tags) {
+        if (json.isJsonObject()) {
+            json.getAsJsonObject().entrySet().forEach(entry -> entry.setValue(recipe_revealer$resolveTags(entry.getValue(), tags)));
+        } else if (json.isJsonArray()) {
+            var array = json.getAsJsonArray();
+            for (int i = 0; i < array.size(); i++) array.set(i, recipe_revealer$resolveTags(array.get(i), tags));
+        } else if (json.isJsonPrimitive() && json.getAsJsonPrimitive().isString() && json.getAsString().startsWith("#minecraft:")) {
+            var values = new JsonArray();
+            for (var item : tags.get(Identifier.parse(json.getAsString().substring(1)))) values.add(item.getRegisteredName());
+            return values;
+        }
+        return json;
     }
 }

@@ -6,7 +6,7 @@ Reveals vanilla recipes in Minecraft’s recipe book. Click to fill ingredients;
 
 Download **recipe-revealer** from a successful [GitHub Actions run](https://github.com/EscapeAltDelete/Recipe-Revealer/actions) and put the JAR in `mods`. No Fabric API or configuration. Disable the recipe book’s craftable-only filter to see everything.
 
-Works in singleplayer and multiplayer using ordinary inventory clicks. Server crafting rules still apply; stock vanilla recipes may differ from server datapacks. Covers crafting, furnaces, blast furnaces and smokers; adds no new UI.
+Works in singleplayer and multiplayer using bundled vanilla ingredient tags and ordinary inventory clicks. Server crafting rules still apply; stock vanilla recipes may differ from server datapacks. Covers crafting, furnaces, blast furnaces and smokers; adds no new UI.
 
 GitHub builds, tests and publishes the mod to this repository’s Maven package, `recipe_revealer:recipe-revealer`. Three runtime classes; no bundled recipes, dependencies or tick loop. Test code is excluded from the JAR.
 

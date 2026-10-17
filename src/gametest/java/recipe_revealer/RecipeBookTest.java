@@ -8,9 +8,12 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 import net.minecraft.client.gui.screens.recipebook.RecipeCollection;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.game.ClientboundRecipeBookAddPacket;
 import net.minecraft.network.protocol.game.ClientboundRecipeBookRemovePacket;
 import net.minecraft.network.chat.Component;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagLoader;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.AbstractCraftingMenu;
 import net.minecraft.world.inventory.ContainerInput;
@@ -24,7 +27,9 @@ import net.minecraft.world.item.crafting.display.RecipeDisplayId;
 import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class RecipeBookTest implements FabricClientGameTest {
     @Override
@@ -52,6 +57,7 @@ public final class RecipeBookTest implements FabricClientGameTest {
                     check(entries(book).size() == expected, "Server updates and rebuilds cannot remove local recipes");
                     check(entries(book).stream().allMatch(entry -> entry.id().index() < 0), "No guessed server IDs");
                 });
+                if (connection == 0) checkMissingTags(context, expected);
                 // A shaped 2x2 recipe with mixed interchangeable ingredient stacks.
                 world.getServer().runOnServer(server -> {
                     var player = world.getConnection().getServerPlayer();
@@ -118,6 +124,33 @@ public final class RecipeBookTest implements FabricClientGameTest {
                 });
             }
         }
+    }
+
+    private static void checkMissingTags(ClientGameTestContext context, long expected) {
+        context.runOnClient(client -> {
+            var items = client.level.registryAccess().lookupOrThrow(Registries.ITEM);
+            var original = items.getTags().collect(Collectors.toMap(tag -> tag.key(), tag -> tag.stream().toList()));
+            try {
+                items.prepareTagReload(new TagLoader.LoadResult<>(Registries.ITEM, Map.of(
+                        ItemTags.PLANKS, List.of(Items.DIRT.builtInRegistryHolder()), ItemTags.POPLAR_LOGS, List.of()))).apply();
+                var book = new ClientRecipeBook();
+                book.rebuildCollections();
+                check(entries(book).size() == expected, "Missing and empty server tags cannot hide vanilla recipes");
+                var mushrooms = find(book, Items.MUSHROOM_STEW).craftingRequirements().orElseThrow().getFirst();
+                check(mushrooms.test(new ItemStack(Items.RED_MUSHROOM))
+                        && mushrooms.test(new ItemStack(Items.BROWN_MUSHROOM)), "Bundled mushroom ingredients");
+                check(find(book, Items.POPLAR_PLANKS).craftingRequirements().orElseThrow().getFirst()
+                        .test(new ItemStack(Items.POPLAR_LOG)), "Empty server tag has local ingredients");
+                var planks = find(book, Items.CRAFTING_TABLE).craftingRequirements().orElseThrow().getFirst();
+                check(planks.test(new ItemStack(Items.OAK_PLANKS)) && !planks.test(new ItemStack(Items.DIRT)),
+                        "Changed server tags cannot change vanilla ingredients");
+                check(items.get(ItemTags.MUSHROOMS).isEmpty() && items.getOrThrow(ItemTags.POPLAR_LOGS).size() == 0
+                        && items.getOrThrow(ItemTags.PLANKS).contains(Items.DIRT.builtInRegistryHolder()),
+                        "Revealing recipes must not change server tags");
+            } finally {
+                items.prepareTagReload(new TagLoader.LoadResult<>(Registries.ITEM, original)).apply();
+            }
+        });
     }
 
     private static void click(ClientGameTestContext context, Item result, boolean maximum) {

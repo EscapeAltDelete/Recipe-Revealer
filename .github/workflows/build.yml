@@ -29,6 +29,7 @@ jobs:
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v5
         with:
+          cache-cleanup: never
           gradle-home-cache-excludes: caches/fabric-loom
       - uses: actions/cache@v5
         with:

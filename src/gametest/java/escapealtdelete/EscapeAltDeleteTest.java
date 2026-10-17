@@ -122,7 +122,8 @@ public final class EscapeAltDeleteTest implements FabricClientGameTest {
     }
 
     private static void click(ClientGameTestContext context, Item result, boolean maximum) {
-        context.runOnClient(client -> {
+        try {
+            context.runOnClient(client -> {
             var entry = find(client.player.getRecipeBook(), result);
             var field = AbstractRecipeBookScreen.class.getDeclaredField("recipeBookComponent");
             field.setAccessible(true);
@@ -131,7 +132,10 @@ public final class EscapeAltDeleteTest implements FabricClientGameTest {
                     RecipeDisplayId.class, boolean.class);
             method.setAccessible(true);
             check((boolean) method.invoke(component, new RecipeCollection(List.of(entry)), entry.id(), maximum), "Native click hook");
-        });
+            });
+        } catch (ReflectiveOperationException error) {
+            throw new AssertionError(error);
+        }
     }
 
     private static RecipeDisplayEntry find(ClientRecipeBook book, Item result) {

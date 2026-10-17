@@ -36,7 +36,8 @@ jobs:
           path: |
             ~/.gradle/caches/fabric-loom
             .gradle/loom-cache
-          key: loom-${{ runner.os }}-${{ hashFiles('build.gradle', 'settings.gradle', 'gradle.properties', 'gradle/wrapper/gradle-wrapper.properties') }}
+          key: loom-${{ runner.os }}-${{ hashFiles('build.gradle', 'settings.gradle', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: loom-${{ runner.os }}-
       - name: Software graphics
         run: |
           sudo apt-get update -qq

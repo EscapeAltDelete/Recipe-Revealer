@@ -10,6 +10,7 @@ import net.minecraft.server.packs.resources.IoSupplier;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.display.RecipeDisplayEntry;
 import net.minecraft.world.item.crafting.display.RecipeDisplayId;
+import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -50,19 +51,27 @@ abstract class EscapeAltDeleteBookMixin {
                 if (!file.getKey().getPath().endsWith(".json")) continue;
                 try (var reader = new InputStreamReader(file.getValue().get(), StandardCharsets.UTF_8)) {
                     var json = JsonParser.parseReader(reader).getAsJsonObject();
-                    switch (json.get("type").getAsString()) {
-                        case "minecraft:crafting_shaped", "minecraft:crafting_shapeless",
-                             "minecraft:smelting", "minecraft:blasting", "minecraft:smoking" -> { }
-                        default -> { continue; }
+                    var type = json.get("type").getAsString();
+                    if (!type.startsWith("minecraft:crafting_")) {
+                        switch (type) {
+                            case "minecraft:smelting", "minecraft:blasting", "minecraft:smoking" -> { }
+                            default -> { continue; }
+                        }
                     }
                     var recipe = Recipe.DIRECT_CODEC.parse(ops, json).getOrThrow();
+                    if (recipe.isSpecial()) continue;
                     var group = recipe.group().isEmpty() ? OptionalInt.empty()
                             : OptionalInt.of(groups.computeIfAbsent(recipe.group(), key -> -1 - groups.size()));
                     for (var display : recipe.display()) {
                         if (!display.isEnabled(client.level.enabledFeatures())) continue;
                         var id = new RecipeDisplayId(-1 - escapealtdelete$local.size());
+                        var ingredients = recipe.placementInfo().ingredients();
+                        if (display instanceof ShapelessCraftingRecipeDisplay shapeless
+                                && shapeless.ingredients().size() < ingredients.size()) {
+                            ingredients = ingredients.subList(0, shapeless.ingredients().size());
+                        }
                         escapealtdelete$local.add(new RecipeDisplayEntry(id, display, group, recipe.recipeBookCategory(),
-                                Optional.of(recipe.placementInfo().ingredients())));
+                                Optional.of(ingredients)));
                     }
                 } catch (Exception error) {
                     LoggerFactory.getLogger("EscapeAltDelete").warn("Cannot display {}", file.getKey(), error);
